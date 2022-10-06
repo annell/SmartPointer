@@ -288,6 +288,49 @@ TEST(Unique, PushbackVector) {
   vector.push_back(std::move(sp));
 }
 
+struct leakyClass {
+  leakyClass() { data = new int(5); }
+
+  int *data = nullptr;
+};
+
+TEST(Unique, LeakyData) {
+  int copyData = 0;
+  int *copyPtr = nullptr;
+  {
+    auto sp = smartPtr::MakeUnique<leakyClass>();
+    copyData = *sp->data;
+    EXPECT_EQ(copyPtr, nullptr);
+    copyPtr = sp->data;
+    EXPECT_EQ(copyData, 5);
+    EXPECT_EQ(*copyPtr, 5);
+  }
+  EXPECT_EQ(copyData, 5);
+  EXPECT_EQ(*copyPtr, 5);
+}
+
+struct notLeakyClass {
+  notLeakyClass() { data = new int(5); }
+  ~notLeakyClass() { delete data; }
+
+  int *data = nullptr;
+};
+
+TEST(Unique, notLeakyData) {
+  int copyData = 0;
+  int *copyPtr = nullptr;
+  {
+    auto sp = smartPtr::MakeUnique<notLeakyClass>();
+    copyData = *sp->data;
+    EXPECT_EQ(copyPtr, nullptr);
+    copyPtr = sp->data;
+    EXPECT_EQ(copyData, 5);
+    EXPECT_EQ(*copyPtr, 5);
+  }
+  EXPECT_EQ(copyData, 5);
+  EXPECT_NE(*copyPtr, 5);
+}
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
